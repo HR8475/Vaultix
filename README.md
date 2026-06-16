@@ -182,3 +182,4 @@ The `requireRole()` middleware enforces this on every workspace-scoped route.
 - [ ] Secret import/export (`.env` files)
 - [ ] Webhook notifications
 - [ ] Rate limiting and IP allowlisting
+
