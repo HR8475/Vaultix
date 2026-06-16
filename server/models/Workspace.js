@@ -44,6 +44,13 @@ const workspaceSchema = new mongoose.Schema(
       required: true,
     },
     members: [memberSchema],
+    encryptionKeyId: {
+      type: String,
+      default: 'default', // indicates global ENCRYPTION_KEY
+    },
+    keyRotatedAt: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );

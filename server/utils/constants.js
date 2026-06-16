@@ -1,3 +1,5 @@
+import config from '../config/index.js';
+
 /** Workspace member roles. */
 export const ROLES = Object.freeze({
   OWNER: 'owner',
@@ -25,21 +27,37 @@ export const AUDIT_ACTIONS = Object.freeze({
   SECRET_UPDATE: 'secret.update',
   SECRET_DELETE: 'secret.delete',
   SECRET_READ: 'secret.read',
+  SECRET_ACCESS: 'secret.access',
+  SECRET_EXPIRE: 'secret.expire',
+  KEY_ROTATE: 'key.rotate',
+  SESSION_REFRESH: 'session.refresh',
+  SESSION_REVOKE: 'session.revoke',
 });
 
 /** JWT token expiry. */
-export const JWT_EXPIRY = '7d';
+export const JWT_EXPIRY = config.jwtExpiry;
+
+/** Refresh token expiry. */
+export const REFRESH_TOKEN_EXPIRY = config.refreshTokenExpiry;
 
 /**
  * Default cookie options for setting httpOnly secure cookies.
- * sameSite is set to 'none' so cross-origin credentialed requests work during
- * development (front-end on a different port). In production this should be
- * paired with `secure: true`.
  */
 export const COOKIE_OPTIONS = Object.freeze({
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
-  sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'none',
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days in ms
+  secure: config.isProduction,
+  sameSite: config.isProduction ? 'strict' : 'lax',
+  maxAge: 15 * 60 * 1000, // 15 min — access token cookie
   path: '/',
+});
+
+/**
+ * Refresh token cookie options — longer lived.
+ */
+export const REFRESH_COOKIE_OPTIONS = Object.freeze({
+  httpOnly: true,
+  secure: config.isProduction,
+  sameSite: config.isProduction ? 'strict' : 'lax',
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  path: '/api/v1/auth',
 });

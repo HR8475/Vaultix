@@ -4,10 +4,13 @@ import api from '../services/api';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
+import { useToast } from '../contexts/ToastContext';
+import { SkeletonCard, SkeletonText } from '../components/ui/Skeleton';
 
 export default function WorkspaceDashboard() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
+  const { addToast } = useToast();
 
   // Core states
   const [loading, setLoading] = useState(true);
@@ -63,6 +66,7 @@ export default function WorkspaceDashboard() {
     } catch (err) {
       console.error('Failed to load workspace data:', err);
       setError('Failed to load workspace dashboard.');
+      addToast('Failed to load workspace dashboard.', 'error');
     } finally {
       setLoading(false);
     }
@@ -93,8 +97,10 @@ export default function WorkspaceDashboard() {
       setIsModalOpen(false);
       setProjectName('');
       setProjectDesc('');
+      addToast('Project created successfully', 'success');
     } catch (err) {
       setModalError(err.response?.data?.message || err.message || 'Failed to create project');
+      addToast('Failed to create project', 'error');
     } finally {
       setCreateLoading(false);
     }
@@ -114,9 +120,11 @@ export default function WorkspaceDashboard() {
       const res = await api.post('/workspaces', {
         name: workspaceName.trim(),
       });
+      addToast(`Workspace ${res.data.data.workspace.name} created`, 'success');
       navigate(`/workspaces/${res.data.data.workspace._id}`);
     } catch (err) {
       setWorkspaceError(err.response?.data?.message || err.message || 'Failed to create workspace');
+      addToast('Failed to create workspace', 'error');
     } finally {
       setCreateWorkspaceLoading(false);
     }
@@ -124,8 +132,23 @@ export default function WorkspaceDashboard() {
 
   if (loading) {
     return (
-      <div className="spinner-container" style={{ minHeight: '60vh' }}>
-        <div className="spinner spinner--md" />
+      <div className="animate-fade-in">
+        <div className="page-header">
+          <div style={{ width: '100%' }}>
+            <SkeletonText lines={2} style={{ width: '300px' }} />
+          </div>
+        </div>
+        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <div className="section" style={{ marginTop: '2rem' }}>
+          <div className="env-grid">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
       </div>
     );
   }

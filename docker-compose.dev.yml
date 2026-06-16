@@ -1,0 +1,34 @@
+
+services:
+  vaultix-api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=development
+      - MONGODB_URI=mongodb://mongo:27017/vaultix
+      - JWT_SECRET=dev-secret
+      - JWT_EXPIRY=15m
+      - REFRESH_TOKEN_SECRET=dev-refresh-secret
+      - REFRESH_TOKEN_EXPIRY=7d
+      - ENCRYPTION_KEY=1234567890123456789012345678901234567890123456789012345678901234
+      - CLIENT_URL=http://localhost:5173
+      - ALLOWED_ORIGINS=http://localhost:5173
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    command: npm run dev
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_dev_data:/data/db
+
+volumes:
+  mongo_dev_data:

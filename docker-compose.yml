@@ -1,0 +1,41 @@
+
+services:
+  vaultix-api:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=production
+      - MONGODB_URI=mongodb://mongo:27017/vaultix
+      - JWT_SECRET=${JWT_SECRET:-your-secret-key}
+      - JWT_EXPIRY=15m
+      - REFRESH_TOKEN_SECRET=${REFRESH_TOKEN_SECRET:-your-refresh-secret}
+      - REFRESH_TOKEN_EXPIRY=7d
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-1234567890123456789012345678901234567890123456789012345678901234}
+      - CLIENT_URL=http://localhost:80
+      - ALLOWED_ORIGINS=http://localhost:80
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  vaultix-client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:6
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+
+volumes:
+  mongo_data:

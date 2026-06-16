@@ -1,17 +1,34 @@
 import crypto from 'crypto';
+import config from '../config/index.js';
 
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16;
 
 /**
+ * Helper to get the correct 32-byte key buffer.
+ * If a custom key buffer is provided, it uses it.
+ * Otherwise defaults to the global ENCRYPTION_KEY.
+ */
+const getKeyBuffer = (customKeyBuffer) => {
+  if (customKeyBuffer && Buffer.isBuffer(customKeyBuffer)) {
+    return customKeyBuffer;
+  }
+  if (!config.encryptionKey) {
+    throw new Error('Global ENCRYPTION_KEY is not defined');
+  }
+  return Buffer.from(config.encryptionKey, 'hex');
+};
+
+/**
  * Encrypts a plaintext string.
  * @param {string} text - The plaintext to encrypt.
+ * @param {Buffer} [customKeyBuffer] - Optional per-workspace key.
  * @returns {string} The encrypted string in format ivHex:authTagHex:encryptedTextHex.
  */
-export const encrypt = (text) => {
+export const encrypt = (text, customKeyBuffer = null) => {
   if (!text) return text;
   
-  const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+  const key = getKeyBuffer(customKeyBuffer);
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
   
@@ -25,12 +42,13 @@ export const encrypt = (text) => {
 /**
  * Decrypts an encrypted string.
  * @param {string} encryptedData - The encrypted string in format ivHex:authTagHex:encryptedTextHex.
+ * @param {Buffer} [customKeyBuffer] - Optional per-workspace key.
  * @returns {string} The decrypted plaintext string.
  */
-export const decrypt = (encryptedData) => {
+export const decrypt = (encryptedData, customKeyBuffer = null) => {
   if (!encryptedData) return encryptedData;
   
-  const key = Buffer.from(process.env.ENCRYPTION_KEY, 'hex');
+  const key = getKeyBuffer(customKeyBuffer);
   const parts = encryptedData.split(':');
   
   if (parts.length !== 3) {

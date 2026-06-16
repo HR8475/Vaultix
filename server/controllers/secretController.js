@@ -2,6 +2,7 @@ import Secret from '../models/Secret.js';
 import Project from '../models/Project.js';
 import Environment from '../models/Environment.js';
 import * as encryptionService from '../services/encryptionService.js';
+import * as keyManagementService from '../services/keyManagementService.js';
 import auditService from '../services/auditService.js';
 import ApiError from '../utils/ApiError.js';
 import { AUDIT_ACTIONS } from '../utils/constants.js';
@@ -64,6 +65,10 @@ export const getSecrets = async (req, res, next) => {
         createdBy: latestVersion ? latestVersion.createdBy : null,
         updatedBy: latestVersion ? latestVersion.createdBy : null, // tracking last modifier
         versionCount: secret.versions.length,
+        expiresAt: secret.expiresAt,
+        oneTimeAccess: secret.oneTimeAccess,
+        accessCount: secret.accessCount,
+        isExpired: secret.expiresAt ? secret.expiresAt < new Date() : false,
       };
     });
 
@@ -102,7 +107,33 @@ export const revealSecret = async (req, res, next) => {
       throw ApiError.badRequest('Secret has no versions');
     }
 
-    const plaintext = encryptionService.decrypt(latestVersion.value);
+    if (secret.expiresAt && secret.expiresAt < new Date()) {
+      // Secret is expired
+      auditService.logAction({
+        userId: req.user._id,
+        workspaceId,
+        action: AUDIT_ACTIONS.SECRET_EXPIRE,
+        entity: 'Secret',
+        entityId: secret._id,
+        metadata: { key: secret.key, projectId, envId },
+        ipAddress: req.ip,
+      });
+      await secret.deleteOne();
+      throw ApiError.notFound('Secret has expired');
+    }
+
+    const workspaceKeyBuffer = await keyManagementService.getWorkspaceKey(workspaceId);
+    const plaintext = encryptionService.decrypt(latestVersion.value, workspaceKeyBuffer);
+
+    secret.accessCount += 1;
+    let willBeDeleted = false;
+
+    if (secret.oneTimeAccess) {
+      willBeDeleted = true;
+      await secret.deleteOne();
+    } else {
+      await secret.save();
+    }
 
     // Audit Log
     auditService.logAction({
@@ -122,6 +153,7 @@ export const revealSecret = async (req, res, next) => {
         key: secret.key,
         plaintext,
         version: latestVersion.version,
+        oneTimeAccessConsumed: willBeDeleted,
       },
     });
   } catch (err) {
@@ -136,7 +168,7 @@ export const revealSecret = async (req, res, next) => {
 export const createSecret = async (req, res, next) => {
   try {
     const { workspaceId, projectId, envId } = req.params;
-    const { key, value } = req.body;
+    const { key, value, expiresAt, oneTimeAccess } = req.body;
 
     if (!key || !value) {
       throw ApiError.badRequest('Key and Value are required');
@@ -156,13 +188,16 @@ export const createSecret = async (req, res, next) => {
       throw ApiError.badRequest(`Secret with key "${cleanKey}" already exists in this environment`);
     }
 
-    const encryptedValue = encryptionService.encrypt(value);
+    const workspaceKeyBuffer = await keyManagementService.getWorkspaceKey(workspaceId);
+    const encryptedValue = encryptionService.encrypt(value, workspaceKeyBuffer);
 
     const secret = await Secret.create({
       workspace: workspaceId,
       project: projectId,
       environment: envId,
       key: cleanKey,
+      expiresAt: expiresAt ? new Date(expiresAt) : undefined,
+      oneTimeAccess: !!oneTimeAccess,
       versions: [
         {
           version: 1,
@@ -205,7 +240,7 @@ export const createSecret = async (req, res, next) => {
 export const updateSecret = async (req, res, next) => {
   try {
     const { workspaceId, projectId, envId, secretId } = req.params;
-    const { value } = req.body;
+    const { value, expiresAt, oneTimeAccess } = req.body;
 
     if (!value) {
       throw ApiError.badRequest('Value is required');
@@ -224,8 +259,16 @@ export const updateSecret = async (req, res, next) => {
       throw ApiError.notFound('Secret not found');
     }
 
-    const encryptedValue = encryptionService.encrypt(value);
+    const workspaceKeyBuffer = await keyManagementService.getWorkspaceKey(workspaceId);
+    const encryptedValue = encryptionService.encrypt(value, workspaceKeyBuffer);
     const nextVersion = secret.versions.length + 1;
+
+    if (expiresAt !== undefined) {
+      secret.expiresAt = expiresAt ? new Date(expiresAt) : undefined;
+    }
+    if (oneTimeAccess !== undefined) {
+      secret.oneTimeAccess = !!oneTimeAccess;
+    }
 
     secret.versions.push({
       version: nextVersion,
@@ -351,7 +394,8 @@ export const bulkImport = async (req, res, next) => {
         key,
       });
 
-      const encryptedValue = encryptionService.encrypt(value);
+      const workspaceKeyBuffer = await keyManagementService.getWorkspaceKey(workspaceId);
+      const encryptedValue = encryptionService.encrypt(value, workspaceKeyBuffer);
 
       if (secret) {
         // Appending new version

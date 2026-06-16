@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { signup, login, logout, getMe } from '../controllers/authController.js';
+import { signup, login, logout, getMe, refreshSession, getSessions, revokeSession } from '../controllers/authController.js';
 import protect from '../middleware/auth.js';
 import validateBody from '../middleware/validate.js';
 
@@ -24,8 +24,14 @@ router.post(
   login
 );
 
+router.post('/refresh', refreshSession);
+
 router.post('/logout', protect, logout);
 
 router.get('/me', protect, getMe);
+
+router.get('/sessions', protect, getSessions);
+
+router.delete('/sessions/:id', protect, revokeSession);
 
 export default router;

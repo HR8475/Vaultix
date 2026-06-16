@@ -32,6 +32,11 @@ const auditLogSchema = new mongoose.Schema({
       'secret.update',
       'secret.delete',
       'secret.read',
+      'secret.access',
+      'secret.expire',
+      'key.rotate',
+      'session.refresh',
+      'session.revoke',
     ],
   },
   entity: {
@@ -45,6 +50,13 @@ const auditLogSchema = new mongoose.Schema({
   },
   ipAddress: {
     type: String,
+  },
+  userAgent: {
+    type: String,
+  },
+  source: {
+    type: String, // 'web', 'cli', 'api'
+    default: 'api',
   },
   timestamp: {
     type: Date,

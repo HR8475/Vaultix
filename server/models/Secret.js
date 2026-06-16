@@ -24,6 +24,17 @@ const secretSchema = new mongoose.Schema(
       trim: true,
       uppercase: true,
     },
+    expiresAt: {
+      type: Date,
+    },
+    oneTimeAccess: {
+      type: Boolean,
+      default: false,
+    },
+    accessCount: {
+      type: Number,
+      default: 0,
+    },
     versions: [
       {
         version: {

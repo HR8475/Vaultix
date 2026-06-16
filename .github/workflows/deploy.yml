@@ -1,0 +1,17 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      # For actual deployment to Docker Hub or GHCR, you would log in and push here.
+      # For Render / Vercel, those platforms typically auto-deploy on push to main
+      # so this workflow is a placeholder for custom deployment scripts.
+      - name: Placeholder Deploy Step
+        run: echo "Deploying Vaultix to production..."
