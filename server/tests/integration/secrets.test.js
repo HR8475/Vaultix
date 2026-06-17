@@ -8,7 +8,7 @@ import User from '../../models/User.js';
 import Workspace from '../../models/Workspace.js';
 import Project from '../../models/Project.js';
 import Environment from '../../models/Environment.js';
-import * as authService from '../../services/authService.js';
+import authService from '../../services/authService.js';
 import errorHandler from '../../middleware/errorHandler.js';
 import config from '../../config/index.js';
 
