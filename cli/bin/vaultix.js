@@ -52,12 +52,12 @@ program
 
 // Run command
 program
-  .command('run')
+  .command('run [cmd...]')
   .description('Run a command with secrets injected directly into its environment')
   .option('-e, --env <environment>', 'specify the environment to pull from (overrides linked config)')
   .option('-d, --dry-run', 'perform a dry-run showing keys that would be injected')
-  .action(async (options, command) => {
-    await run(command.args, options);
+  .action(async (cmd, options, command) => {
+    await run(cmd, options);
   });
 
 // Handle unknown commands
