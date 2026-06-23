@@ -7,7 +7,7 @@ import { getSession, getProjectConfig } from '../utils/configStore.js';
 export default async function run(args, options = {}) {
   const token = getSession();
   if (!token) {
-    console.error(chalk.yellow('⚠ You are not authenticated. Please run "vaultix login" first.'));
+    console.error(chalk.yellow('⚠ You are not authenticated. Please run "vaultix login" or "vaultix auth <api-key>" first.'));
     process.exit(1);
   }
 

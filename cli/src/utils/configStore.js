@@ -8,14 +8,15 @@ const PROJECT_FILE = path.join(process.cwd(), '.vaultix.json');
 
 /**
  * Save auth token globally
- * @param {string} token - JWT authentication token
+ * @param {string} token - JWT or API key
+ * @param {string} type  - 'jwt' or 'apikey'
  */
-export function saveSession(token) {
+export function saveSession(token, type = 'jwt') {
   try {
     if (!fs.existsSync(GLOBAL_DIR)) {
       fs.mkdirSync(GLOBAL_DIR, { recursive: true });
     }
-    fs.writeFileSync(SESSION_FILE, JSON.stringify({ token }, null, 2), 'utf8');
+    fs.writeFileSync(SESSION_FILE, JSON.stringify({ token, type }, null, 2), 'utf8');
   } catch (err) {
     console.error('Failed to save session:', err.message);
   }
@@ -23,7 +24,7 @@ export function saveSession(token) {
 
 /**
  * Get global auth token
- * @returns {string|null} JWT token or null
+ * @returns {string|null} JWT or API key or null
  */
 export function getSession() {
   try {
@@ -35,6 +36,23 @@ export function getSession() {
   } catch (err) {
     // If corrupt, clean it up
     clearSession();
+  }
+  return null;
+}
+
+/**
+ * Get global auth token type
+ * @returns {string|null} 'jwt' or 'apikey' or null
+ */
+export function getSessionType() {
+  try {
+    if (fs.existsSync(SESSION_FILE)) {
+      const data = fs.readFileSync(SESSION_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      return parsed.type || 'jwt'; // fallback for old sessions
+    }
+  } catch (err) {
+    // Silently ignore
   }
   return null;
 }

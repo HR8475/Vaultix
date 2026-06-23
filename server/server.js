@@ -10,6 +10,7 @@ import logger from './utils/logger.js';
 import connectDB from './config/db.js';
 
 /* ── Security Middleware ─────────────────────────────────────────── */
+// Added to trigger nodemon restart and load updated .envs
 import securityHeaders from './middleware/securityHeaders.js';
 import { apiLimiter, authLimiter } from './middleware/rateLimiter.js';
 import { noSqlSanitize, xssSanitize } from './middleware/sanitize.js';
@@ -20,6 +21,7 @@ import workspaceRoutes from './routes/workspaceRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import environmentRoutes from './routes/environmentRoutes.js';
 import secretRoutes from './routes/secretRoutes.js';
+import apiKeyRoutes from './routes/apiKeyRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
@@ -59,6 +61,7 @@ app.use('/api/v1/workspaces', workspaceRoutes);
 app.use('/api/v1/workspaces', projectRoutes);
 app.use('/api/v1/workspaces', environmentRoutes);
 app.use('/api/v1/workspaces', secretRoutes);
+app.use('/api/v1/workspaces', apiKeyRoutes);
 
 // ── Health check ────────────────────────────────────────────────
 app.get('/health', (_req, res) => {

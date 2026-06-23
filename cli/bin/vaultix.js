@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import login from '../src/commands/login.js';
 import logout from '../src/commands/logout.js';
+import auth from '../src/commands/auth.js';
 import init from '../src/commands/init.js';
 import status from '../src/commands/status.js';
 import pull from '../src/commands/pull.js';
@@ -26,6 +27,13 @@ program
   .command('logout')
   .description('Log out and clear active session tokens')
   .action(logout);
+
+// Auth command (Machine-to-machine)
+program
+  .command('auth [token]')
+  .description('Authenticate a machine using an API key')
+  .option('-t, --token <token>', 'The API key to authenticate with')
+  .action(auth);
 
 // Init command
 program

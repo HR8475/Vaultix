@@ -7,6 +7,7 @@ import EnvironmentView from './pages/EnvironmentView';
 import Environments from './pages/Environments';
 import AuditLog from './pages/AuditLog';
 import Settings from './pages/Settings';
+import ApiKeys from './pages/ApiKeys';
 import DashboardLayout from './components/layout/DashboardLayout';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
@@ -31,6 +32,7 @@ export default function App() {
           />
           <Route path="workspaces/:workspaceId/audit" element={<AuditLog />} />
           <Route path="workspaces/:workspaceId/settings" element={<Settings />} />
+          <Route path="workspaces/:workspaceId/api-keys" element={<ApiKeys />} />
         </Route>
       </Route>
 

@@ -4,7 +4,7 @@ const auditLogSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true,
+    // Now optional as some system events or future events might not have a user
   },
   workspace: {
     type: mongoose.Schema.Types.ObjectId,
@@ -37,6 +37,10 @@ const auditLogSchema = new mongoose.Schema({
       'key.rotate',
       'session.refresh',
       'session.revoke',
+      'apikey.create',
+      'apikey.revoke',
+      'apikey.rotate',
+      'apikey.use',
     ],
   },
   entity: {

@@ -11,7 +11,8 @@ const apiClient = axios.create({
 // Request interceptor to dynamically attach auth token
 apiClient.interceptors.request.use(
   (config) => {
-    const token = getSession();
+    // Prefer environment variable (for CI/CD) then fallback to stored session
+    const token = process.env.VAULTIX_TOKEN || getSession();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }

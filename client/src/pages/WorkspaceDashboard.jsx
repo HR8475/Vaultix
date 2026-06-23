@@ -1,21 +1,40 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Button from '../components/common/Button';
 import Modal from '../components/common/Modal';
 import Input from '../components/common/Input';
 import { useToast } from '../contexts/ToastContext';
-import { SkeletonCard, SkeletonText } from '../components/ui/Skeleton';
+
+// Dashboard sub-components
+import StatCard from '../components/dashboard/StatCard';
+import ActivityFeed from '../components/dashboard/ActivityFeed';
+import TopProjects from '../components/dashboard/TopProjects';
+import SecurityHealth from '../components/dashboard/SecurityHealth';
+
+// Icons
+import {
+  KeyRound,
+  FolderOpen,
+  Globe,
+  Users,
+  Plus,
+} from 'lucide-react';
 
 export default function WorkspaceDashboard() {
   const { workspaceId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { addToast } = useToast();
 
   // Core states
   const [loading, setLoading] = useState(true);
   const [workspace, setWorkspace] = useState(null);
   const [projects, setProjects] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
+  const [totalSecrets, setTotalSecrets] = useState(0);
+  const [totalEnvironments, setTotalEnvironments] = useState(0);
   const [error, setError] = useState('');
 
   // Modal create states
@@ -50,19 +69,60 @@ export default function WorkspaceDashboard() {
     }
   }, [workspaceId, navigate]);
 
-  // Load workspace data and project list
+  // Load workspace data, projects, and audit logs
   const fetchWorkspaceData = async () => {
     if (!workspaceId) return;
 
     try {
-      const [workspaceRes, projectsRes] = await Promise.all([
+      const [workspaceRes, projectsRes, auditRes] = await Promise.all([
         api.get(`/workspaces/${workspaceId}`),
         api.get(`/workspaces/${workspaceId}/projects`),
+        api.get(`/workspaces/${workspaceId}/audit`),
       ]);
 
-      setWorkspace(workspaceRes.data.data.workspace);
-      setProjects(projectsRes.data.data.projects || []);
+      const ws = workspaceRes.data.data.workspace;
+      const projs = projectsRes.data.data.projects || [];
+      const logs = auditRes.data.data.logs || [];
+
+      setWorkspace(ws);
+      setProjects(projs);
+      setAuditLogs(logs);
       setError('');
+
+      // Aggregate environment and secret counts from projects
+      let envCount = 0;
+      let secretCount = 0;
+
+      // Fetch environment counts for each project
+      const envPromises = projs.map(async (project) => {
+        try {
+          const envRes = await api.get(`/workspaces/${workspaceId}/environments/${project._id}`);
+          const envs = envRes.data.data.environments || [];
+          project.environmentCount = envs.length;
+          envCount += envs.length;
+
+          // Count secrets across all environments
+          const secretPromises = envs.map(async (env) => {
+            try {
+              const secretRes = await api.get(
+                `/workspaces/${workspaceId}/environments/${project._id}/${env._id}/secrets`
+              );
+              return (secretRes.data.data.secrets || []).length;
+            } catch {
+              return 0;
+            }
+          });
+
+          const secretCounts = await Promise.all(secretPromises);
+          secretCount += secretCounts.reduce((a, b) => a + b, 0);
+        } catch {
+          project.environmentCount = 0;
+        }
+      });
+
+      await Promise.all(envPromises);
+      setTotalEnvironments(envCount);
+      setTotalSecrets(secretCount);
     } catch (err) {
       console.error('Failed to load workspace data:', err);
       setError('Failed to load workspace dashboard.');
@@ -130,51 +190,53 @@ export default function WorkspaceDashboard() {
     }
   };
 
+  // ─── Loading State ────────────────────────────────────────────
   if (loading) {
     return (
       <div className="animate-fade-in">
-        <div className="page-header">
-          <div style={{ width: '100%' }}>
-            <SkeletonText lines={2} style={{ width: '300px' }} />
-          </div>
+        {/* Skeleton welcome */}
+        <div style={{ marginBottom: 'var(--space-6)' }}>
+          <div className="skeleton" style={{ width: '120px', height: '14px', marginBottom: '8px' }} />
+          <div className="skeleton" style={{ width: '260px', height: '28px' }} />
         </div>
-        <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
-          <SkeletonCard />
-          <SkeletonCard />
+        {/* Skeleton stats */}
+        <div className="dash-skeleton-stats">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="skeleton dash-skeleton-stat" />
+          ))}
         </div>
-        <div className="section" style={{ marginTop: '2rem' }}>
-          <div className="env-grid">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
+        {/* Skeleton grid */}
+        <div className="dash-skeleton-grid">
+          <div className="skeleton dash-skeleton-card" />
+          <div className="skeleton dash-skeleton-card" />
         </div>
       </div>
     );
   }
 
+  // ─── No Workspace State ───────────────────────────────────────
   if (!workspaceId) {
     return (
       <div className="empty-state glass-card animate-slide-up" style={{ margin: 'var(--space-8)' }}>
-        <div className="empty-state-icon">🌐</div>
-        <h3 className="empty-state-title">Welcome to Vaultix!</h3>
+        <div className="empty-state-icon">🔒</div>
+        <h3 className="empty-state-title">Welcome to Vaultix</h3>
         <p className="empty-state-desc">
-          To start managing projects, environments, and secrets, you need to create your first workspace.
+          Create your first workspace to start managing secrets securely across your projects and environments.
         </p>
-        <form onSubmit={handleCreateWorkspace} className="modal-form" style={{ maxWidth: '400px', width: '100%', margin: '0 auto' }}>
+        <form onSubmit={handleCreateWorkspace} className="modal-form" style={{ maxWidth: '360px', width: '100%', margin: '0 auto' }}>
           {workspaceError && (
             <div className="auth-error" style={{ marginBottom: 'var(--space-4)', marginTop: 0 }}>
               {workspaceError}
             </div>
           )}
           <Input
-            placeholder="Workspace Name (e.g. My Workspace)"
+            placeholder="Workspace Name (e.g. My Team)"
             value={workspaceName}
             onChange={(e) => setWorkspaceName(e.target.value)}
             required
             autoFocus
           />
-          <Button type="submit" variant="primary" loading={createWorkspaceLoading} style={{ marginTop: 'var(--space-4)', width: '100%' }}>
+          <Button type="submit" variant="primary" loading={createWorkspaceLoading} style={{ marginTop: 'var(--space-3)', width: '100%' }}>
             Create Workspace
           </Button>
         </form>
@@ -182,54 +244,96 @@ export default function WorkspaceDashboard() {
     );
   }
 
-  // Real stats
+  // ─── Stats Data ───────────────────────────────────────────────
   const stats = [
-    { label: 'Total Projects', value: projects.length.toString(), icon: '📁', color: 'indigo' },
-    { label: 'Team Members', value: workspace?.members?.length.toString() || '0', icon: '👥', color: 'emerald' },
+    {
+      icon: <KeyRound size={20} />,
+      value: totalSecrets.toString(),
+      label: 'Total Secrets',
+      color: 'purple',
+    },
+    {
+      icon: <FolderOpen size={20} />,
+      value: projects.length.toString(),
+      label: 'Projects',
+      color: 'blue',
+    },
+    {
+      icon: <Globe size={20} />,
+      value: totalEnvironments.toString(),
+      label: 'Environments',
+      color: 'cyan',
+    },
+    {
+      icon: <Users size={20} />,
+      value: (workspace?.members?.length || 0).toString(),
+      label: 'Team Members',
+      color: 'emerald',
+    },
   ];
 
+  // ─── Main Dashboard ──────────────────────────────────────────
   return (
     <div className="animate-fade-in">
-      {/* Page Header */}
-      <div className="page-header">
-        <div>
-          <h1 className="page-title">{workspace?.name || 'Workspace Dashboard'}</h1>
-          <p className="page-subtitle">Manage projects, environments, and secrets for this workspace.</p>
+      {/* Welcome Header */}
+      <div className="dash-welcome">
+        <div className="dash-welcome-row">
+          <div>
+            <div className="dash-welcome-greeting">
+              {getGreeting()},
+            </div>
+            <h1 className="dash-welcome-title">
+              {user?.name || 'Welcome back'} 👋
+            </h1>
+            <div className="dash-welcome-workspace">
+              {workspace?.name || 'Workspace Dashboard'}
+            </div>
+          </div>
+          <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+            <Plus size={14} />
+            Create Project
+          </Button>
         </div>
-        <Button variant="primary" icon="➕" onClick={() => setIsModalOpen(true)}>
-          Create Project
-        </Button>
       </div>
 
       {error && (
-        <div className="auth-error" style={{ marginBottom: 'var(--space-8)' }}>
+        <div className="auth-error" style={{ marginBottom: 'var(--space-6)' }}>
           {error}
         </div>
       )}
 
+      {/* Empty state when no projects - AT TOP NOW */}
+      {projects.length === 0 && (
+        <div className="empty-state glass-card animate-slide-up" style={{ marginBottom: 'var(--space-6)' }}>
+          <div className="empty-state-icon" style={{ fontSize: '2rem', marginBottom: 'var(--space-2)' }}>📂</div>
+          <h3 className="empty-state-title" style={{ fontSize: 'var(--font-xl)', color: 'var(--text-primary)' }}>No projects yet</h3>
+          <p className="empty-state-desc" style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
+            Create your first project to start managing environments and secrets securely.
+          </p>
+          <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+            <Plus size={16} style={{ marginRight: '6px' }} />
+            Create Project
+          </Button>
+        </div>
+      )}
+
       {/* Stats Grid */}
-      <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
+      <div className="stats-grid">
         {stats.map((stat, i) => (
-          <div key={stat.label} className={`glass-card stat-card animate-slide-up delay-${i + 1}`}>
-            <div className={`stat-icon stat-icon--${stat.color}`}>{stat.icon}</div>
-            <div>
-              <div className="stat-value">{stat.value}</div>
-              <div className="stat-label">{stat.label}</div>
-            </div>
-          </div>
+          <StatCard key={stat.label} {...stat} delay={i + 1} />
         ))}
       </div>
 
-      {/* Projects Section */}
-      <div className="section animate-slide-up delay-3">
-        <div className="section-header">
-          <h2 className="section-title">Projects</h2>
-          <Button variant="ghost" size="sm" onClick={fetchWorkspaceData}>
-            Refresh
-          </Button>
-        </div>
+      {/* Top Banner / Create Project */}
+      {projects.length > 0 && (
+        <div className="section animate-slide-up" style={{ marginTop: 'var(--space-2)' }}>
+          <div className="section-header">
+            <h2 className="section-title">All Projects</h2>
+            <Button variant="ghost" size="sm" onClick={fetchWorkspaceData}>
+              Refresh
+            </Button>
+          </div>
 
-        {projects.length > 0 ? (
           <div className="env-grid">
             {projects.map((project, i) => (
               <Link
@@ -239,40 +343,47 @@ export default function WorkspaceDashboard() {
               >
                 <div className="env-card-header">
                   <span className="env-card-name">{project.name}</span>
-                  <span className="badge badge-info">Active</span>
+                  <span className="badge badge-purple">Active</span>
                 </div>
                 <p
                   className="text-secondary text-sm"
                   style={{
-                    marginBottom: 'var(--space-4)',
+                    marginBottom: 'var(--space-3)',
                     display: '-webkit-box',
                     WebkitLineClamp: 2,
                     WebkitBoxOrient: 'vertical',
                     overflow: 'hidden',
-                    height: '42px',
+                    height: '38px',
                   }}
                 >
                   {project.description || 'No description provided.'}
                 </p>
                 <div className="env-card-meta">
                   <div className="env-card-meta-item">
-                    <span>🕐</span>
-                    <span>Created {new Date(project.createdAt).toLocaleDateString()}</span>
+                    <FolderOpen size={13} style={{ opacity: 0.5 }} />
+                    <span>Created {new Date(project.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   </div>
                 </div>
               </Link>
             ))}
           </div>
-        ) : (
-          <div className="empty-state glass-card">
-            <div className="empty-state-icon">📂</div>
-            <h3 className="empty-state-title">No projects yet</h3>
-            <p className="empty-state-desc">Create your first project to start managing environments and secrets.</p>
-            <Button variant="primary" icon="➕" onClick={() => setIsModalOpen(true)}>
-              Create Project
-            </Button>
+        </div>
+      )}
+
+      {/* Main Content Grid below the project grid */}
+      <div className="dash-grid">
+        {/* Activity Feed */}
+        <div className="animate-slide-up delay-5">
+          <ActivityFeed logs={auditLogs} maxItems={8} />
+        </div>
+
+        {/* Right Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+          {/* Top Projects */}
+          <div className="animate-slide-up delay-5">
+            <TopProjects projects={projects} />
           </div>
-        )}
+        </div>
       </div>
 
       {/* Create Project Modal */}
@@ -316,4 +427,14 @@ export default function WorkspaceDashboard() {
       </Modal>
     </div>
   );
+}
+
+/**
+ * Returns a time-appropriate greeting string.
+ */
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
 }

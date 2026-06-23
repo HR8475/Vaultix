@@ -32,6 +32,10 @@ export const AUDIT_ACTIONS = Object.freeze({
   KEY_ROTATE: 'key.rotate',
   SESSION_REFRESH: 'session.refresh',
   SESSION_REVOKE: 'session.revoke',
+  APIKEY_CREATE: 'apikey.create',
+  APIKEY_REVOKE: 'apikey.revoke',
+  APIKEY_ROTATE: 'apikey.rotate',
+  APIKEY_USE: 'apikey.use',
 });
 
 /** JWT token expiry. */

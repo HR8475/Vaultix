@@ -170,16 +170,53 @@ The `requireRole()` middleware enforces this on every workspace-scoped route.
 | POST | `/api/v1/workspaces/:wid/environments/:pid` | Create environment |
 | GET | `/api/v1/workspaces/:wid/environments/:pid` | List environments |
 
+## 🤖 API Key Authentication
+
+Vaultix supports machine-to-machine authentication via API keys, ideal for CI/CD pipelines, Docker containers, and automated scripts.
+
+### 1. Create an API Key
+- Navigate to **API Keys** in the Vaultix dashboard.
+- Click **Create API Key**.
+- Assign a name, scope, expiration, and permissions (e.g. `env.pull`).
+- **Copy the key** (it will never be shown again).
+
+### 2. Using Vaultix CLI in CI/CD (GitHub Actions)
+
+Store your API key as a secret in your repository (e.g. `VAULTIX_TOKEN`), then use it in your workflow:
+
+```yaml
+name: Deploy with Vaultix Secrets
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      # The CLI will automatically use the VAULTIX_TOKEN env var if present
+      - name: Pull Secrets
+        env:
+          VAULTIX_TOKEN: ${{ secrets.VAULTIX_TOKEN }}
+        run: |
+          npx vaultix pull --env production --output .env.prod
+```
+
+Alternatively, you can authenticate manually:
+```bash
+vaultix auth "vx_live_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+
 ---
 
 ## 🔮 Next Steps
 
 - [ ] Secret encryption (AES-256-GCM)
 - [ ] Secret versioning and rollback
-- [ ] API key generation for CI/CD
+- [x] API key generation for CI/CD
 - [ ] Team invitation via email
-- [ ] Audit log viewer page
-- [ ] Secret import/export (`.env` files)
+- [x] Audit log viewer page
+- [x] Secret import/export (`.env` files)
 - [ ] Webhook notifications
 - [ ] Rate limiting and IP allowlisting
 

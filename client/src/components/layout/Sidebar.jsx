@@ -1,5 +1,18 @@
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import {
+  LayoutDashboard,
+  FolderOpen,
+  Globe,
+  KeyRound,
+  ScrollText,
+  Settings,
+  Key,
+  Users,
+  Puzzle,
+  LogOut,
+  HelpCircle,
+} from 'lucide-react';
 import Logo from '../ui/Logo';
 
 export default function Sidebar({ isOpen, onClose }) {
@@ -9,12 +22,21 @@ export default function Sidebar({ isOpen, onClose }) {
   const workspaceId = match ? match[1] : '';
   const basePath = workspaceId ? `/workspaces/${workspaceId}` : '';
 
-  const navItems = [
-    { to: workspaceId ? basePath : '/', icon: '📊', label: 'Dashboard', end: true },
-    { to: `${basePath}/projects`, icon: '📁', label: 'Projects' },
-    { to: `${basePath}/environments`, icon: '🌐', label: 'Environments' },
-    { to: `${basePath}/audit`, icon: '📋', label: 'Audit Log' },
-    { to: `${basePath}/settings`, icon: '⚙️', label: 'Settings' },
+  const mainNavItems = [
+    { to: workspaceId ? basePath : '/', icon: <LayoutDashboard size={18} />, label: 'Dashboard', end: true },
+    { to: `${basePath}/projects`, icon: <FolderOpen size={18} />, label: 'Projects' },
+    { to: `${basePath}/environments`, icon: <Globe size={18} />, label: 'Environments' },
+  ];
+
+  const securityNavItems = [
+    { to: `${basePath}/api-keys`, icon: <Key size={18} />, label: 'API Keys' },
+    { to: `${basePath}/audit`, icon: <ScrollText size={18} />, label: 'Audit Log' },
+    { to: `${basePath}/settings`, icon: <Settings size={18} />, label: 'Settings' },
+  ];
+
+  const comingSoonItems = [
+    { icon: <Users size={18} />, label: 'Members' },
+    { icon: <Puzzle size={18} />, label: 'Integrations' },
   ];
 
   const initials = user?.name
@@ -38,13 +60,13 @@ export default function Sidebar({ isOpen, onClose }) {
       <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
         {/* Logo */}
         <div className="sidebar-logo">
-          <Logo size={32} showText />
+          <Logo size={28} showText />
         </div>
 
         {/* Navigation */}
         <nav className="sidebar-nav">
-          <span className="sidebar-nav-label">Main Menu</span>
-          {navItems.map((item) => (
+          <span className="sidebar-nav-label">Main</span>
+          {mainNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -58,6 +80,48 @@ export default function Sidebar({ isOpen, onClose }) {
               <span>{item.label}</span>
             </NavLink>
           ))}
+
+          <div className="sidebar-divider" />
+          <span className="sidebar-section-label">Security</span>
+          {securityNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? 'active' : ''}`
+              }
+              onClick={onClose}
+            >
+              <span className="sidebar-link-icon">{item.icon}</span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+
+          <div className="sidebar-divider" />
+          <span className="sidebar-section-label">Coming Soon</span>
+          {comingSoonItems.map((item) => (
+            <div key={item.label} className="sidebar-link sidebar-link--disabled">
+              <span className="sidebar-link-icon">{item.icon}</span>
+              <span>{item.label}</span>
+              <span className="sidebar-link-badge">
+                <span className="badge badge-muted">Soon</span>
+              </span>
+            </div>
+          ))}
+
+          <div style={{ flex: 1 }} />
+
+          <div className="sidebar-divider" />
+          <a
+            href="https://github.com/HR8475/Vaultix"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sidebar-link"
+            style={{ marginTop: 'var(--space-1)' }}
+          >
+            <span className="sidebar-link-icon"><HelpCircle size={18} /></span>
+            <span>Help & Docs</span>
+          </a>
         </nav>
 
         {/* User section */}
@@ -73,7 +137,7 @@ export default function Sidebar({ isOpen, onClose }) {
             title="Sign out"
             aria-label="Sign out"
           >
-            ⏻
+            <LogOut size={16} />
           </button>
         </div>
       </aside>

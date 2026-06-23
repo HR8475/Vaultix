@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import apiClient from '../utils/apiClient.js';
-import { getSession, getProjectConfig } from '../utils/configStore.js';
+import { getSession, getSessionType, getProjectConfig } from '../utils/configStore.js';
 
 export default async function status() {
   const token = getSession();
@@ -14,16 +14,29 @@ export default async function status() {
     console.log(`  Auth Session: ${chalk.red('Not Logged In')}`);
   } else {
     const spinner = ora('Verifying authentication token...').start();
+    const type = getSessionType();
+
     try {
-      const meRes = await apiClient.get('/auth/me');
-      const user = meRes.data.data.user;
-      spinner.stop();
-      console.log(`  Auth Session: ${chalk.green('Logged In')}`);
-      console.log(`  Account:      ${chalk.bold(user.name)} (${user.email})`);
+      if (type === 'apikey') {
+        const response = await apiClient.post('/auth/api-key', { apiKey: token });
+        const { user, workspace, keyName, permissions } = response.data.data;
+        spinner.stop();
+        console.log(`  Auth Session: ${chalk.green('Logged In via API Key')}`);
+        console.log(`  Key Name:     ${chalk.cyan(keyName)}`);
+        console.log(`  Workspace:    ${chalk.bold(workspace.name)}`);
+        console.log(`  Permissions:  ${permissions.join(', ')}`);
+        console.log(`  Creator:      ${user.name} (${user.email})`);
+      } else {
+        const meRes = await apiClient.get('/auth/me');
+        const user = meRes.data.data.user;
+        spinner.stop();
+        console.log(`  Auth Session: ${chalk.green('Logged In')}`);
+        console.log(`  Account:      ${chalk.bold(user.name)} (${user.email})`);
+      }
     } catch (err) {
       spinner.stop();
       console.log(`  Auth Session: ${chalk.red('Expired or Invalid Session')}`);
-      console.log(chalk.yellow('  Please run "vaultix login" to authenticate again.'));
+      console.log(chalk.yellow('  Please run "vaultix login" or "vaultix auth" to authenticate again.'));
     }
   }
 

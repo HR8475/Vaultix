@@ -61,8 +61,8 @@ const config = Object.freeze({
 
   /* Rate limiting */
   rateLimitWindowMs: envInt('RATE_LIMIT_WINDOW_MS', 15 * 60 * 1000),
-  rateLimitMax: envInt('RATE_LIMIT_MAX', 100),
-  authRateLimitMax: envInt('AUTH_RATE_LIMIT_MAX', 10),
+  rateLimitMax: envInt('RATE_LIMIT_MAX', 1000),
+  authRateLimitMax: envInt('AUTH_RATE_LIMIT_MAX', 100),
 
   /* Logging */
   logLevel: env('LOG_LEVEL', isProduction ? 'info' : 'debug'),
