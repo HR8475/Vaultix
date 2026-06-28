@@ -34,9 +34,9 @@ export default function Sidebar({ isOpen, onClose }) {
     { to: `${basePath}/settings`, icon: <Settings size={18} />, label: 'Settings' },
   ];
 
-  const comingSoonItems = [
-    { icon: <Users size={18} />, label: 'Members' },
-    { icon: <Puzzle size={18} />, label: 'Integrations' },
+  const teamNavItems = [
+    { to: `${basePath}/members`, icon: <Users size={18} />, label: 'Members' },
+    { to: `${basePath}/integrations`, icon: <Puzzle size={18} />, label: 'Integrations' },
   ];
 
   const initials = user?.name
@@ -98,15 +98,19 @@ export default function Sidebar({ isOpen, onClose }) {
           ))}
 
           <div className="sidebar-divider" />
-          <span className="sidebar-section-label">Coming Soon</span>
-          {comingSoonItems.map((item) => (
-            <div key={item.label} className="sidebar-link sidebar-link--disabled">
+          <span className="sidebar-section-label">Team</span>
+          {teamNavItems.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `sidebar-link ${isActive ? 'active' : ''}`
+              }
+              onClick={onClose}
+            >
               <span className="sidebar-link-icon">{item.icon}</span>
               <span>{item.label}</span>
-              <span className="sidebar-link-badge">
-                <span className="badge badge-muted">Soon</span>
-              </span>
-            </div>
+            </NavLink>
           ))}
 
           <div style={{ flex: 1 }} />

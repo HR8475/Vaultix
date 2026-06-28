@@ -159,6 +159,47 @@ export const updateMemberRole = async (req, res, next) => {
 };
 
 /**
+ * DELETE /api/v1/workspaces/:workspaceId/members/:userId
+ * Remove a member from the workspace.
+ */
+export const removeMember = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const workspace = req.workspace;
+
+    const memberIndex = workspace.members.findIndex(
+      (m) => m.user.toString() === userId
+    );
+
+    if (memberIndex === -1) {
+      throw ApiError.notFound('Member not found in this workspace');
+    }
+
+    const member = workspace.members[memberIndex];
+    if (member.role === ROLES.OWNER) {
+      throw ApiError.badRequest('Cannot remove the workspace owner');
+    }
+
+    workspace.members.splice(memberIndex, 1);
+    await workspace.save();
+
+    auditService.logAction({
+      userId: req.user._id,
+      workspaceId: workspace._id,
+      action: AUDIT_ACTIONS.WORKSPACE_REMOVE_MEMBER,
+      entity: 'Workspace',
+      entityId: workspace._id,
+      metadata: { removedUserId: userId },
+      ipAddress: req.ip,
+    });
+
+    return res.status(200).json({ success: true, data: { workspace } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/**
  * GET /api/v1/workspaces/:workspaceId/audit
  * Fetch audit logs for the workspace.
  */

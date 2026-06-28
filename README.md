@@ -15,8 +15,9 @@ A modern, full-stack secrets management platform built with the MERN stack (Mong
 │  ┌──────────┐  ┌──────────┐  ┌─────────────────┐   │
 │  │  Auth     │  │  Layout  │  │  Pages           │  │
 │  │  Context  │  │  Shell   │  │  (Dashboard,     │  │
-│  │          │  │  (Sidebar │  │   Projects,      │  │
-│  │          │  │   Topbar) │  │   Environments)  │  │
+│  │          │  │  (Sidebar,│  │   Projects, Env, │  │
+│  │          │  │   Topbar, │  │   Members,       │  │
+│  │          │  │   Search) │  │   Integrations)  │  │
 │  └──────────┘  └──────────┘  └─────────────────┘   │
 └────────────────────┬────────────────────────────────┘
                      │ /api/v1/*
@@ -105,6 +106,17 @@ npm install
 npm run dev
 ```
 Client runs on `http://localhost:5173` (proxies `/api` to backend)
+
+---
+
+## ✨ Features
+
+- **Global Search**: Instantly navigate to projects and environments using keyboard shortcuts (`Ctrl+K` / `Cmd+K`).
+- **Dynamic Dashboard**: View top projects, activity feeds, and workspace security health at a glance.
+- **Team Management**: Invite members via email, manage Role-Based Access Control (Owner, Admin, Member, Viewer).
+- **Integrations**: Connect with GitHub Actions, Vercel, Docker, Kubernetes, AWS, and more.
+- **Audit Logs**: Track all activities across the workspace in real-time.
+- **API Keys**: Generate scoped API keys for machine-to-machine authentication.
 
 ---
 
@@ -214,7 +226,7 @@ vaultix auth "vx_live_xxxxxxxxxxxxxxxxxxxxxxxxxxx"
 - [ ] Secret encryption (AES-256-GCM)
 - [ ] Secret versioning and rollback
 - [x] API key generation for CI/CD
-- [ ] Team invitation via email
+- [x] Team invitation via email
 - [x] Audit log viewer page
 - [x] Secret import/export (`.env` files)
 - [ ] Webhook notifications

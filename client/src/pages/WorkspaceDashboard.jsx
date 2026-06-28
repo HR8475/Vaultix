@@ -324,18 +324,25 @@ export default function WorkspaceDashboard() {
         ))}
       </div>
 
-      {/* Top Banner / Create Project */}
+      {/* Recent Projects — show only latest 3 */}
       {projects.length > 0 && (
         <div className="section animate-slide-up" style={{ marginTop: 'var(--space-2)' }}>
           <div className="section-header">
-            <h2 className="section-title">All Projects</h2>
-            <Button variant="ghost" size="sm" onClick={fetchWorkspaceData}>
-              Refresh
-            </Button>
+            <h2 className="section-title">Recent Projects</h2>
+            <Link
+              to={`/workspaces/${workspaceId}/projects`}
+              className="dash-card-action"
+              style={{ fontSize: 'var(--font-sm)', fontWeight: 500 }}
+            >
+              View All ({projects.length}) →
+            </Link>
           </div>
 
           <div className="env-grid">
-            {projects.map((project, i) => (
+            {[...projects]
+              .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+              .slice(0, 3)
+              .map((project, i) => (
               <Link
                 key={project._id}
                 to={`/workspaces/${workspaceId}/projects/${project._id}`}

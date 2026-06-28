@@ -5,6 +5,7 @@ import {
   getById,
   addMember,
   updateMemberRole,
+  removeMember,
   getAuditLogs,
   update,
 } from '../controllers/workspaceController.js';
@@ -62,6 +63,13 @@ router.patch(
     { field: 'role', type: 'string', message: 'Role is required' },
   ]),
   updateMemberRole
+);
+
+router.delete(
+  '/:workspaceId/members/:userId',
+  protect,
+  requireRole('owner', 'admin'),
+  removeMember
 );
 
 export default router;
